@@ -1,7 +1,7 @@
 // filepath: /home/ndecaux/Git/Anima/src/Anima/math-tools/data_io/animaTRKReader.h
 #pragma once
 
-#include <AnimaDataIOExport.h>
+#include <libAnimaCoreExport.h>
 #include <animaTRKHeaderStructure.h> // Inclure la définition de la structure
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
@@ -10,7 +10,7 @@
 namespace anima
 {
 
-class ANIMADATAIO_EXPORT TRKReader
+class LIBANIMACORE_EXPORT TRKReader
 {
 public:
     TRKReader()

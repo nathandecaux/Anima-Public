@@ -1,4 +1,3 @@
-// filepath: /home/ndecaux/Git/Anima/src/Anima/math-tools/data_io/animaTRKReader.cxx
 #include <animaTRKReader.h>
 #include <animaTRKHeaderStructure.h>
 #include <vnl_matrix.h>
@@ -17,17 +16,12 @@ namespace anima
 
 void TRKReader::Update()
 {
-    // Utiliser le membre m_Header au lieu d'une variable locale
-    // anima::TRKHeaderStructure headerStr; // Supprimer cette ligne
-
     std::ifstream inFile(m_FileName,std::ios::binary);
     if (!inFile.is_open())
         throw itk::ExceptionObject(__FILE__, __LINE__,"Unable to open file " + m_FileName,ITK_LOCATION);
 
-    // Lire directement dans le membre m_Header
     inFile.read((char *) &m_Header, sizeof(anima::TRKHeaderStructure));
 
-    // Utiliser m_Header pour les vérifications et l'accès aux informations
     if (m_Header.version != 2)
         throw itk::ExceptionObject(__FILE__, __LINE__,"TRK reader only supports version 2",ITK_LOCATION);
 
@@ -37,27 +31,23 @@ void TRKReader::Update()
     m_OutputData->Allocate();
 
     vtkSmartPointer <vtkPoints> myPoints = vtkSmartPointer <vtkPoints>::New();
-    // Utiliser m_Header.n_scalars
     std::vector < vtkSmartPointer <vtkDoubleArray> > scalarArrays(m_Header.n_scalars);
     for (unsigned int i = 0;i < m_Header.n_scalars;++i)
     {
         scalarArrays[i] = vtkSmartPointer <vtkDoubleArray>::New();
         scalarArrays[i]->SetNumberOfComponents(1);
-        scalarArrays[i]->SetName(m_Header.scalar_name[i]); // Utiliser m_Header
+        scalarArrays[i]->SetName(m_Header.scalar_name[i]);
     }
 
-    // Utiliser m_Header.n_properties
     std::vector < vtkSmartPointer <vtkDoubleArray> > cellArrays(m_Header.n_properties);
     for (unsigned int i = 0;i < m_Header.n_properties;++i)
     {
         cellArrays[i] = vtkSmartPointer <vtkDoubleArray>::New();
         cellArrays[i]->SetNumberOfComponents(1);
-        cellArrays[i]->SetName(m_Header.property_name[i]); // Utiliser m_Header
+        cellArrays[i]->SetName(m_Header.property_name[i]);
     }
 
-    // Utiliser m_Header.n_count
-    unsigned int nCells = (m_Header.n_count > 0) ? static_cast<unsigned int>(m_Header.n_count) : 0; // Gérer le cas où n_count est 0 ou négatif
-    // Utiliser m_Header.n_scalars et m_Header.n_properties
+    unsigned int nCells = (m_Header.n_count > 0) ? static_cast<unsigned int>(m_Header.n_count) : 0;
     std::vector <float> pointValues(3 + m_Header.n_scalars);
     std::vector <float> cellScalars(m_Header.n_properties);
     vnl_matrix <double> vox_to_ras(4,4);
@@ -79,28 +69,16 @@ void TRKReader::Update()
     }
 
 
-    for (unsigned int i = 0; i < nCells; ++i) // Utiliser la variable nCells calculée
+    for (unsigned int i = 0; i < nCells; ++i)
     {
         int npts;
         inFile.read((char *) &npts, sizeof(int));
 
-        // Vérifier si la lecture a échoué (fin de fichier prématurée ?)
-        if (inFile.fail() || npts <= 0) {
-             // Gérer l'erreur ou la fin de fichier inattendue
-             // Peut-être logger un avertissement et arrêter la lecture
-             // std::cerr << "Warning: Unexpected end of file or invalid point count encountered." << std::endl;
-             break; // Sortir de la boucle
-        }
-
-
         vtkIdType* ids = new vtkIdType[npts];
 
-        for (int j = 0; j < npts; ++j) // Utiliser int car npts est int
+        for (unsigned int j = 0;j < npts;++j)
         {
-            // Utiliser m_Header.n_scalars
             inFile.read((char *) pointValues.data(), (3 + m_Header.n_scalars) * sizeof(float));
-             if (inFile.fail()) { /* Gérer erreur */ break; }
-
 
             double xValue = vox_to_ras(0,3);
             double yValue = vox_to_ras(1,3);
@@ -114,15 +92,12 @@ void TRKReader::Update()
             }
 
             ids[j] = myPoints->InsertNextPoint(xValue, yValue, zValue);
-            // Utiliser m_Header.n_scalars
             for (unsigned int k = 0;k < m_Header.n_scalars;++k)
                 scalarArrays[k]->InsertNextValue(pointValues[3 + k]);
         }
-         if (inFile.fail()) { delete[] ids; break; } // Nettoyer et sortir si erreur
 
-
-        // Utiliser m_Header.n_properties
-        if (m_Header.n_properties > 0) {
+        if (m_Header.n_properties > 0)
+        {
             inFile.read((char *) cellScalars.data(), m_Header.n_properties * sizeof(float));
              if (inFile.fail()) { delete[] ids; break; } // Nettoyer et sortir si erreur
             for (unsigned int k = 0;k < m_Header.n_properties;++k)
@@ -137,10 +112,8 @@ void TRKReader::Update()
     inFile.close();
 
     m_OutputData->SetPoints(myPoints);
-    // Utiliser m_Header.n_scalars
     for (unsigned int k = 0;k < m_Header.n_scalars;++k)
         m_OutputData->GetPointData()->AddArray(scalarArrays[k]);
-    // Utiliser m_Header.n_properties
     for (unsigned int k = 0;k < m_Header.n_properties;++k)
         m_OutputData->GetCellData()->AddArray(cellArrays[k]);
 }
